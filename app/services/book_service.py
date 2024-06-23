@@ -184,3 +184,18 @@ def delete_book_service(book_id):
         db.session.rollback()
         return {'error': str(e)}  
     
+def update_book_borrow_service(book_id, user_id):
+    book = Book.query.get(book_id)
+
+    if not book:
+        return {"error": 'Reservation not found'}
+    try:
+        book.status = 'borrowed'
+        book.borrower_id = user_id
+        db.session.commit()
+        return {'message': 'Reservation completed successfully'}
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}
+    return book
+    

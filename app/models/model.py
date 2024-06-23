@@ -60,6 +60,17 @@ class Reservation(db.Model):
         CheckConstraint("status IN ('confirmed', 'cancelled', 'completed', 'failed')"),
     )
 
+    def to_dict(self):
+        return {
+            'reservation_id': self.reservation_id,
+            'user_id': self.user_id,
+            'book_id': self.book_id,
+            'reservation_date': self.reservation_date.isoformat(),
+            'status': self.status,
+            'book_location': self.book_location,
+            'reservation_location': self.reservation_location
+        }
+
 
 class Review(db.Model):
     __tablename__ = "Review"

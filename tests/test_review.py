@@ -18,11 +18,17 @@ class ReviewTestCase(unittest.TestCase):
         with self.app.app_context():
             db.create_all()
             user = User(username='testuser', password="123456", email="123@163.com", role="admin")
+            stu_user = User(username='stu_user', password="123456", email="123@163.com", role="student")
             book = Book(title='testbook', author="test", publisher="testor", publish_date=date.today(), isbn="123456", location="west", status="available")
             db.session.add(user)
+            db.session.add(stu_user)
             db.session.add(book)
             db.session.commit()
+            from flask_jwt_extended import create_access_token
+            self.access_token = create_access_token(identity=user.user_id)
+            self.stu_token = create_access_token(identity=stu_user.user_id)
             self.user_id = user.user_id
+            self.stu_id = stu_user.user_id
             self.book_id = book.book_id
 
     def tearDown(self):
@@ -35,8 +41,7 @@ class ReviewTestCase(unittest.TestCase):
             'book_id': self.book_id,
             'content': 'Great book!',
             'rating': 5,
-            'authorization': "student"
-        })
+        },headers={'Authorization': f'Bearer {self.stu_token}'})
         self.assertEqual(response.status_code, 201)
 
     def test_get_book_rating(self):
@@ -45,8 +50,7 @@ class ReviewTestCase(unittest.TestCase):
             'book_id': self.book_id,
             'content': 'Great book!',
             'rating': 5,
-            'authorization': "student"
-        })
+        }, headers={'Authorization': f'Bearer {self.stu_token}'})
         response = self.client.get(f'/api/reviews/books/{self.book_id}/rating')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["average_rating"], 5.0)
@@ -57,8 +61,7 @@ class ReviewTestCase(unittest.TestCase):
             'book_id': self.book_id,
             'content': 'Great book!',
             'rating': 5,
-            'authorization': "student"
-        })
+        }, headers={'Authorization': f'Bearer {self.stu_token}'})
         response = self.client.get(f'/api/reviews')
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(len(response.json), 1)
@@ -69,8 +72,7 @@ class ReviewTestCase(unittest.TestCase):
             'book_id': self.book_id,
             'content': 'Great book!',
             'rating': 5,
-            'authorization': "student"
-        })
+        }, headers={'Authorization': f'Bearer {self.stu_token}'})
         review_id = response.json['reviewId']
         response = self.client.get(f'/api/reviews/{review_id}')
         self.assertEqual(response.status_code, 200)
@@ -82,8 +84,7 @@ class ReviewTestCase(unittest.TestCase):
             'book_id': self.book_id,
             'content': 'Great book!',
             'rating': 5,
-            'authorization': "student"
-        })
+        }, headers={'Authorization': f'Bearer {self.stu_token}'})
         response = self.client.get(f'/api/reviews/books/{self.book_id}/reviews')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json), 1)
@@ -94,14 +95,12 @@ class ReviewTestCase(unittest.TestCase):
             'book_id': self.book_id,
             'content': 'Great book!',
             'rating': 5,
-            'authorization': "student"
-        })
+        }, headers={'Authorization': f'Bearer {self.stu_token}'})
         review_id = response.json['reviewId']
         response = self.client.put(f'/api/reviews/{review_id}', json={
             'content': 'Awesome book!',
             'rating': 4,
-            'authorization': 'admin'
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         self.assertEqual(response.status_code, 200)
         # self.assertEqual(response.json['content'], 'Awesome book!')
         self.assertEqual(response.json['message'], "Review information updated successfully")
@@ -113,11 +112,9 @@ class ReviewTestCase(unittest.TestCase):
             'content': 'Great book!',
             'rating': 5,
             'authorization': "student"
-        })
+        },headers={'Authorization': f'Bearer {self.stu_token}'})
         review_id = response.json['reviewId']
-        response = self.client.delete(f'/api/reviews/{review_id}', json={
-            'authorization': 'admin'
-        })
+        response = self.client.delete(f'/api/reviews/{review_id}', headers={'Authorization': f'Bearer {self.access_token}'})
         self.assertEqual(response.status_code, 200)
 
 if __name__ == '__main__':

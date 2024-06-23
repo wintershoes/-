@@ -2,21 +2,26 @@
 # time : 2024/6/23 14:54
 from flask import Blueprint, request, jsonify
 from app.services.review_service import ReviewService
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models.model import *
 
 review_bp = Blueprint('review_bp', __name__)
 
 
 @review_bp.route('/reviews', methods=['POST'])
+@jwt_required()
 def add_review():
     data = request.get_json()
     user_id = data.get('user_id')
     book_id = data.get('book_id')
     content = data.get('content')
     rating = data.get('rating')
-    authorization = data.get('authorization')
 
-    if authorization not in ('student', 'teacher', 'admin'):
-        return jsonify({"error": "Unauthorized"}), 404
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role not in ('student', 'teacher', 'admin'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
     try:
         new_review = ReviewService.add_review(user_id, book_id, content, rating)
         return jsonify({"message": "Review added successfully", "reviewId": new_review.review_id}), 201
@@ -71,14 +76,18 @@ def get_reviews_by_book(book_id):
 
 
 @review_bp.route('/reviews/<int:review_id>', methods=['PUT'])
+@jwt_required()
 def update_review(review_id):
     data = request.get_json()
     content = data.get('content')
     rating = data.get('rating')
-    authorization = data.get('authorization')
+    
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
+
     try:
-        if authorization != 'admin':
-            return jsonify({"error": "Unauthorized"}), 404
         updated_review = ReviewService.update_review(review_id, content, rating)
         if updated_review:
             return jsonify({"message": "Review information updated successfully"}), 200
@@ -88,12 +97,15 @@ def update_review(review_id):
 
 
 @review_bp.route('/reviews/<int:review_id>', methods=['DELETE'])
+@jwt_required()
 def delete_review(review_id):
-    data = request.get_json()
-    authorization = data.get('authorization')
+
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
+
     try:
-        if authorization != 'admin':
-            return jsonify({"error": "Unauthorized"}), 404
         deleted_review = ReviewService.delete_review(review_id)
         if deleted_review:
             return jsonify({'message': 'Review deleted successfully'}), 200

@@ -20,7 +20,6 @@ def login():
 @bp.route('/users/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_user(user_id):
-    print(user_id)
     current_user_id = get_jwt_identity()
     # 确保用户只能访问自己的信息，除非他们有更高权限（例如管理员）
     if current_user_id != user_id:

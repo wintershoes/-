@@ -73,6 +73,7 @@ class BookTestCase(unittest.TestCase):
             review2 = Review(user_id=user3.user_id, book_id=book1.book_id, content="Good read, but a bit lengthy.", rating=4)
             db.session.add_all([review1, review2])
             db.session.commit()
+            self.user_id = user1.user_id
 
     def tearDown(self):
         with self.app.app_context():
@@ -202,6 +203,26 @@ class BookTestCase(unittest.TestCase):
         response = self.client.delete(f'/api/books/9999', headers={'Authorization': f'Bearer {self.access_token}'})
         self.assertEqual(response.status_code, 404)
         self.assertIn('Book not found', response.get_json()['error'])
+
+    def test_create_book(self):
+        # Assuming admin_token is a valid JWT token for an admin user
+
+        response = self.client.post('/api/books', json={
+            'title': 'New Book',
+            'author': 'New Author',
+            'publisher': 'New Publisher',
+            'publish_date': '2023-01-01',
+            'isbn': '987654321',
+            'location': 'New Shelf',
+            'book_image': 'data:image/png;base64,iVBORw0KGgo='
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
+
+        book_id = response.json["bookId"]
+        response = self.client.put(f'/api/books/{book_id}/borrow', json={
+            'user_id': self.user_id
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
+
+        self.assertEqual(response.status_code, 200)
 
 if __name__ == '__main__':
     unittest.main()

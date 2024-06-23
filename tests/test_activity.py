@@ -1,8 +1,11 @@
 # editor : banyanrong
 # time : 2024/6/23 16:40
+import sys
+import os
 import unittest
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app import create_app, db
-from app.models.models import Activity
+from app.models.model import Activity,User
 from datetime import date
 
 class ActivityTestCase(unittest.TestCase):
@@ -11,6 +14,12 @@ class ActivityTestCase(unittest.TestCase):
         self.client = self.app.test_client()
         with self.app.app_context():
             db.create_all()
+            user = User(username='testuser', password="123456", email="123@163.com", role="admin")
+            db.session.add(user)
+            db.session.commit()
+            from flask_jwt_extended import create_access_token
+            self.access_token = create_access_token(identity=user.user_id)
+            
 
     def tearDown(self):
         with self.app.app_context():
@@ -24,8 +33,7 @@ class ActivityTestCase(unittest.TestCase):
             'end_time': date.today().isoformat(),
             'location': 'Test Location',
             'link': 'http://testlink.com',
-            'authorization': "admin"
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         self.assertEqual(response.status_code, 201)
 
     def test_get_activity(self):
@@ -36,8 +44,7 @@ class ActivityTestCase(unittest.TestCase):
             'end_time': date.today().isoformat(),
             'location': 'Test Location',
             'link': 'http://testlink.com',
-            'authorization': "admin"
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         activity_id = response.json['activityId']
         response = self.client.get(f'/api/activities/{activity_id}')
         self.assertEqual(response.status_code, 200)
@@ -51,8 +58,7 @@ class ActivityTestCase(unittest.TestCase):
             'end_time': date.today().isoformat(),
             'location': 'Test Location 1',
             'link': 'http://testlink1.com',
-            'authorization': 'admin'
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         self.client.post('/api/activities', json={
             'name': 'Test Activity 2',
             'description': 'This is a test activity 2',
@@ -60,11 +66,10 @@ class ActivityTestCase(unittest.TestCase):
             'end_time': date.today().isoformat(),
             'location': 'Test Location 2',
             'link': 'http://testlink2.com',
-            'admin': 'authorization'
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         response = self.client.get('/api/activities')
         self.assertEqual(response.status_code, 200)
-        self.assertGreater(len(response.json), 2)
+        self.assertGreaterEqual(len(response.json), 2)
 
     def test_update_activity(self):
         response = self.client.post('/api/activities', json={
@@ -74,8 +79,7 @@ class ActivityTestCase(unittest.TestCase):
             'end_time': date.today().isoformat(),
             'location': 'Test Location',
             'link': 'http://testlink.com',
-            'authorization': 'admin'
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         activity_id = response.json["activityId"]
         response = self.client.put(f'/api/activities/{activity_id}', json={
             'name': 'Updated Activity',
@@ -84,8 +88,7 @@ class ActivityTestCase(unittest.TestCase):
             'end_time': date.today().isoformat(),
             'location': 'Updated Location',
             'link': 'http://updatedlink.com',
-            'authorization': 'admin'
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["message"], "Activity information updated successfully")
 
@@ -97,16 +100,12 @@ class ActivityTestCase(unittest.TestCase):
             'end_time': date.today().isoformat(),
             'location': 'Test Location',
             'link': 'http://testlink.com',
-            'authorization': 'admin'
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         activity_id = response.json["activityId"]
         response = self.client.delete(f'/api/activities/{activity_id}', json={
-            "authorization": 'admin'
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         self.assertEqual(response.status_code, 200)
-        response = self.client.get(f'/api/activities/{activity_id}', json={
-            "authorization": 'admin'
-        })
+        response = self.client.get(f'/api/activities/{activity_id}', headers={'Authorization': f'Bearer {self.access_token}'})
         self.assertEqual(response.status_code, 404)
 
 if __name__ == '__main__':

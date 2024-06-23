@@ -2,7 +2,8 @@
 # time : 2024/6/23 0:05
 from flask import Blueprint, request, jsonify
 from app.services.score_service import ScoreService
-
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models.model import *
 score_bp = Blueprint('score_bp', __name__)
 
 
@@ -45,13 +46,16 @@ def get_scores():
 
 
 @score_bp.route('/scores/<int:score_id>', methods=['PUT'])
+@jwt_required()
 def update_score(score_id):
     data = request.get_json()
     points = data.get('points')
     description = data.get('description')
-    authorization = data.get('authorization')
-    if authorization != 'admin':
-        return jsonify({'error': "Unauthorized"}), 404
+
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
 
     updated_score = ScoreService.update_score(score_id, points, description)
     try:
@@ -64,11 +68,15 @@ def update_score(score_id):
 
 
 @score_bp.route('/scores/<int:score_id>', methods=['DELETE'])
+@jwt_required()
 def delete_score(score_id):
     data = request.get_json()
-    authorization = data.get("authorization")
-    if authorization != 'admin':
-        return jsonify({'error': "Unauthorized"}), 404
+
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
     deleted_score = ScoreService.delete_score(score_id)
     try:
         if deleted_score:

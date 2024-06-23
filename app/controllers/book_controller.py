@@ -97,3 +97,18 @@ def delete_book_endpoint(book_id):
         status_code = 404 if result['error'] == 'Book not found' else 400
         return jsonify(result), status_code
     return jsonify(result), 200
+
+@bp.route('<int:book_id>/borrow', methods=['PUT'])
+@jwt_required()
+def update_book_borrow(book_id):
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error':'Unauthorized'}), 401
+
+    data = request.get_json()
+    user_id = data.get("user_id")
+    result = update_book_borrow_service(book_id, user_id)
+    if 'error' in result:
+        return jsonify(result), 404
+    return jsonify(result), 200

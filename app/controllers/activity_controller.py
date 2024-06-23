@@ -3,10 +3,13 @@
 from flask import Blueprint, request, jsonify
 from app.services.activity_service import ActivityService
 from datetime import datetime
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models.model import *
 
 activity_bp = Blueprint('activity_bp', __name__)
 
 @activity_bp.route('/activities', methods=['POST'])
+@jwt_required()
 def add_activity():
     try:
         data = request.get_json()
@@ -16,10 +19,12 @@ def add_activity():
         end_time = datetime.fromisoformat(data.get('end_time'))
         location = data.get('location')
         link = data.get('link')
-        authorization = data.get("authorization")
+        
+        current_user_id = get_jwt_identity()
+        current_user = User.query.get(current_user_id)
+        if current_user.role != 'admin':
+            return jsonify({'error': 'Unauthorized'}), 401
 
-        if authorization != 'admin':
-            return jsonify({"error": "Unauthorized"}), 404
         new_activity = ActivityService.add_activity(name, description, start_time, end_time, location, link)
         return jsonify({
             "message": "Activity added successfully",
@@ -51,6 +56,7 @@ def get_all_activities():
 
 
 @activity_bp.route('/activities/<int:activity_id>', methods=['PUT'])
+@jwt_required()
 def update_activity(activity_id):
     data = request.get_json()
     name = data.get('name')
@@ -59,10 +65,13 @@ def update_activity(activity_id):
     end_time = datetime.fromisoformat(data.get('end_time'))
     location = data.get('location')
     link = data.get('link')
-    authorization = data.get('authorization')
+
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
+
     try:
-        if authorization != 'admin':
-            return jsonify({"message": "Unauthorized"}), 404
         updated_activity = ActivityService.update_activity(activity_id, name, description, start_time, end_time, location, link)
         if updated_activity:
             return jsonify({"message": "Activity information updated successfully"}), 200
@@ -72,12 +81,14 @@ def update_activity(activity_id):
 
 
 @activity_bp.route('/activities/<int:activity_id>', methods=['DELETE'])
+@jwt_required()
 def delete_activity(activity_id):
     data = request.get_json()
-    authorization = data.get("authorization")
 
-    if authorization != 'admin':
-        return jsonify({"message": "Unauthorized"}), 404
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
 
     deleted_activity = ActivityService.delete_activity(activity_id)
     if deleted_activity:

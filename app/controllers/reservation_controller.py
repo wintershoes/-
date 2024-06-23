@@ -1,10 +1,13 @@
 from flask import Blueprint, request, jsonify
 from app.services.reservation_service import ReservationService
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models.model import *
 
 reservation_bp = Blueprint('reservation_bp', __name__)
 
 
 @reservation_bp.route('/reservations', methods=['POST'])
+@jwt_required()
 def add_reservation():
     data = request.get_json()
     user_id = data.get('user_id')
@@ -12,11 +15,13 @@ def add_reservation():
     status = data.get('status')
     book_location = data.get('book_location')
     reservation_location = data.get('reservation_location')
-    authorization = data.get('authorization')
-    try:
-        if authorization not in ('student', 'teacher', 'admin'):
-            return {"error": "Unauthorized"}, 404
 
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role not in ('student', 'teacher', 'admin'):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
         new_reservation = ReservationService.add_reservation(user_id, book_id, status, book_location, reservation_location)
         if not new_reservation:
             return jsonify({"error": "Book not available for reservation"}), 404
@@ -29,12 +34,14 @@ def add_reservation():
 
 
 @reservation_bp.route('/reservations/<int:reservation_id>', methods=['GET'])
+@jwt_required()
 def get_reservation(reservation_id):
-    data = request.get_json()
-    authorization = data.get("authorization")
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role not in ('student', 'teacher', 'admin'):
+        return jsonify({'error': 'Unauthorized'}), 401
+
     try:
-        if authorization not in ('student', 'teacher', 'admin'):
-            return {"error": "Unauthorized"}, 404
         reservation = ReservationService.get_reservation(reservation_id)
         if reservation:
             return jsonify(reservation.to_dict()), 200
@@ -44,12 +51,14 @@ def get_reservation(reservation_id):
 
 
 @reservation_bp.route('/reservations/confirmed', methods=['GET'])
+@jwt_required()
 def get_all_confirmed_reservations():
-    data = request.get_json()
-    authorization = data.get("authorization")
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role not in ('student', 'teacher', 'admin'):
+        return jsonify({'error': 'Unauthorized'}), 401
+
     try:
-        if authorization not in ('student', 'teacher', 'admin'):
-            return jsonify({"error": "Unauthorized"}), 404
         reservations = ReservationService.get_all_confirmed_reservations()
         if not reservations:
             return jsonify({"error": "No confirmed reservations found"}), 404
@@ -59,12 +68,15 @@ def get_all_confirmed_reservations():
 
 
 @reservation_bp.route('/reservations/user/<int:user_id>', methods=['GET'])
+@jwt_required()
 def get_reservation_by_user(user_id):
-    data = request.get_json()
-    authorization = data.get("authorization")
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role not in ('student', 'teacher', 'admin'):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+
     try:
-        if authorization not in ('student', 'teacher', 'admin'):
-            return jsonify({"error": "Unauthorized"}), 404
         reservations = ReservationService.get_reservation_by_user(user_id)
         if not reservations:
             return jsonify({"error": "No reservations found for the user"}), 404
@@ -74,12 +86,15 @@ def get_reservation_by_user(user_id):
 
 
 @reservation_bp.route('/reservations/book/<int:book_id>', methods=['GET'])
+@jwt_required()
 def get_reservation_by_book(book_id):
-    data = request.get_json()
-    authorization = data.get("authorization")
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role not in ('student', 'teacher', 'admin'):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+
     try:
-        if authorization not in ('student', 'teacher', 'admin'):
-            return jsonify({"error": "Unauthorized"}), 404
         reservations = ReservationService.get_reservation_by_book(book_id)
         if not reservations:
             return jsonify({"error": "No reservations found for the book"}), 404
@@ -89,14 +104,14 @@ def get_reservation_by_book(book_id):
 
 
 @reservation_bp.route('/reservations/<int:reservation_id>/cancel', methods=['PUT'])
+@jwt_required()
 def cancel_reservation(reservation_id):
-    data = request.get_json()
-    authorization = data.get("authorization")
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role not in ('student', 'teacher', 'admin'):
+        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        if authorization not in ('student', 'teacher', 'admin'):
-            return jsonify({"error": "Unauthorized"}), 404
-
         reservation = ReservationService.cancel_reservation(reservation_id)
 
         if not reservation:
@@ -107,17 +122,19 @@ def cancel_reservation(reservation_id):
 
 
 @reservation_bp.route('/reservations/<int:reservation_id>', methods=['PUT'])
+@jwt_required()
 def update_reservation(reservation_id):
     data = request.get_json()
     status = data.get('status')
     book_location = data.get('book_location')
     reservation_location = data.get('reservation_location')
-    authorization = data.get('authorization')
+    
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        if authorization != 'admin':
-            return jsonify({"error": "Unauthorized"}), 404
-
         updated_reservation = ReservationService.update_reservation(reservation_id, status, book_location, reservation_location)
         if updated_reservation:
             return jsonify({"message": "Reservation information updated successfully"}), 200
@@ -127,15 +144,17 @@ def update_reservation(reservation_id):
 
 
 @reservation_bp.route('/reservations/<int:reservation_id>/complete', methods=['PUT'])
+@jwt_required()
 def complete_reservation(reservation_id):
     data = request.get_json()
     pos_user_id = data.get('user_id')
-    authorization = data.get('authorization')
+
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        if authorization != 'admin':
-            return jsonify({"error": "Unauthorized"}), 401
-
         reservation = ReservationService.complete_reservation(reservation_id, pos_user_id)
 
         if not reservation:
@@ -147,13 +166,15 @@ def complete_reservation(reservation_id):
 
 
 @reservation_bp.route('/reservations/<int:reservation_id>', methods=['DELETE'])
+@jwt_required()
 def delete_reservation(reservation_id):
-    data = request.get_json()
-    authorization = data.get("authorization")
+
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        if authorization != 'admin':
-            return jsonify({"error": "Unauthorized"}), 401
         deleted_reservation = ReservationService.delete_reservation(reservation_id)
         if deleted_reservation:
             return jsonify({'message': 'Reservation deleted successfully'}), 200

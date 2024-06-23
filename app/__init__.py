@@ -25,7 +25,7 @@ def create_app():
 
     app.register_blueprint(user_controller.bp)
     app.register_blueprint(book_controller.bp)
-    # app.register_blueprint(reservation_controller.bp)
+    app.register_blueprint(reservation_controller.reservation_bp, url_prefix='/api')
     app.register_blueprint(activity_controller.activity_bp, url_prefix='/api')
     app.register_blueprint(review_controller.review_bp, url_prefix='/api')
     app.register_blueprint(score_controller.score_bp, url_prefix='/api')

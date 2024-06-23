@@ -1,4 +1,4 @@
-from app.models.models import Reservation, Book, User, db
+from app.models.model import Reservation, Book, User, db
 from . import reservation_points
 
 class ReservationService:

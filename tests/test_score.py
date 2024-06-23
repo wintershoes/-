@@ -17,6 +17,8 @@ class ScoreTestCase(unittest.TestCase):
             user = User(username='testuser', password="123456", email="123@163.com", role="admin")
             db.session.add(user)
             db.session.commit()
+            from flask_jwt_extended import create_access_token
+            self.access_token = create_access_token(identity=user.user_id)
             self.user_id = user.user_id
 
     def tearDown(self):
@@ -61,8 +63,7 @@ class ScoreTestCase(unittest.TestCase):
         response = self.client.put(f'/api/scores/{score_id["scoreId"]}', json={
             'points': 20,
             'description': 'Updated score',
-            'authorization': 'admin'
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json['message'], "Score information updated successfully")
 
@@ -75,7 +76,7 @@ class ScoreTestCase(unittest.TestCase):
         score_id = response.json
         response = self.client.delete(f'/api/scores/{score_id["scoreId"]}', json={
             'authorization': "admin"
-        })
+        }, headers={'Authorization': f'Bearer {self.access_token}'})
         self.assertEqual(response.status_code, 200)
 
 
