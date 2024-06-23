@@ -33,7 +33,7 @@ def login_user(username, password):
             'role': user.role
         }, 200
     else:
-        return {'error': 'Invalid username or password'}, 400
+        return {'error': 'Invalid username or password'}, 401
     
 def get_user_by_id(user_id):
     try:

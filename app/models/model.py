@@ -1,6 +1,7 @@
 from sqlalchemy import CheckConstraint
 from app import db
 from werkzeug.security import generate_password_hash
+from sqlalchemy.sql import func
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -40,6 +41,11 @@ class Book(db.Model):
     reservations = db.relationship('Reservation', backref='Book', lazy=True)
     reviews = db.relationship('Review', backref='Book', lazy=True)
 
+    def average_rating(self):
+        # 使用func.avg计算平均分，并使用scalar()直接返回结果
+        average = db.session.query(func.avg(Review.rating)).filter(Review.book_id == self.book_id).scalar()
+        # 如果没有评分，average将返回-1
+        return float(average) if average is not None else -1
 
 class Reservation(db.Model):
     __tablename__ = 'Reservation'

@@ -24,7 +24,7 @@ def get_user(user_id):
     current_user_id = get_jwt_identity()
     # 确保用户只能访问自己的信息，除非他们有更高权限（例如管理员）
     if current_user_id != user_id:
-        return jsonify({'error': 'Access denied'}), 400
+        return jsonify({'error': 'Access denied'}), 401
 
     user_info = get_user_by_id(user_id)
     if not user_info:
@@ -36,7 +36,7 @@ def get_user(user_id):
 def update_user(user_id):
     current_user_id = get_jwt_identity()
     if current_user_id != user_id:
-        return jsonify({'error': 'Unauthorized'}), 400
+        return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
     result, status = update_user_info(user_id, data.get('email'))
@@ -47,7 +47,7 @@ def update_user(user_id):
 def get_user_points_route(user_id):
     current_user_id = get_jwt_identity()
     if current_user_id != user_id:
-        return jsonify({'error': 'Access denied'}), 400
+        return jsonify({'error': 'Access denied'}), 401
 
     points = get_user_points(user_id)
     if points is None:
@@ -61,7 +61,7 @@ def update_user_points(user_id):
     current_user_id = get_jwt_identity()
     current_user = get_user_by_id(current_user_id)
     if current_user['role'] != 'admin':
-        return jsonify({'error': 'Unauthorized'}), 400
+        return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
     points = data.get('points')
@@ -77,7 +77,7 @@ def add_user():
     current_user_id = get_jwt_identity()
     current_user = get_user_by_id(current_user_id)
     if current_user['role'] != 'admin':
-        return jsonify({'error': 'Unauthorized'}), 403
+        return jsonify({'error': 'Unauthorized'}), 401
 
     user_data = request.get_json()
     username = user_data.get('username')
@@ -95,7 +95,8 @@ def remove_user(user_id):
     current_user_id = get_jwt_identity()
     current_user = get_user_by_id(current_user_id)
     if current_user['role'] != 'admin':
-        return jsonify({'error': 'Unauthorized'}), 400
+        return jsonify({'error': 'Unauthorized'}), 401
 
     result, status = delete_user(user_id)
     return jsonify(result), status
+
