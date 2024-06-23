@@ -268,7 +268,38 @@
   }
   ```
 
+##### 账户验证
+
+- **方法**: POST
+- **URL**: `/account/verify`
+- **请求体**:
+  
+  ```json
+  {
+    "net_id": "student123",
+    "password": "password123",
+    "account_type": "student"
+  }
+  ```
+
+- **成功响应**:
+
+  ```json
+  {
+    "message": "Verification successful"
+  }
+  ```
+
+- **失败响应**:
+  
+  ```json
+  {
+    "message": "Verification failed"
+  }
+  ```
+
 #### 2. 教师账户管理
+
 （同学生账户管理）
 
 #### 3. 管理员账户管理
