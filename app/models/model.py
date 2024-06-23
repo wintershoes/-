@@ -1,5 +1,6 @@
 from sqlalchemy import CheckConstraint
 from app import db
+from werkzeug.security import generate_password_hash
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -66,6 +67,15 @@ class Review(db.Model):
         CheckConstraint("rating BETWEEN 1 AND 5"),
     )
 
+    def to_dict(self):
+        return {
+            'review_id': self.review_id,
+            'user_id': self.user_id,
+            'book_id': self.book_id,
+            'content': self.content,
+            'rating': self.rating,
+            'review_date': self.review_date.isoformat()
+        }
 
 class Score(db.Model):
     __tablename__ = "Score"
@@ -74,6 +84,15 @@ class Score(db.Model):
     points = db.Column(db.Integer, nullable=False)
     change_date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
     description = db.Column(db.String(255))
+
+    def to_dict(self):
+        return {
+            'score_id': self.score_id,
+            'user_id': self.user_id,
+            'points': self.points,
+            'change_date': self.change_date.isoformat(),
+            'description': self.description
+        }
 
 
 class Activity(db.Model):
@@ -85,3 +104,14 @@ class Activity(db.Model):
     end_time = db.Column(db.TIMESTAMP, nullable=False)
     location = db.Column(db.String(100), nullable=False)
     link = db.Column(db.String(255))
+
+    def to_dict(self):
+        return {
+            'activity_id': self.activity_id,
+            'name': self.name,
+            'description': self.description,
+            'start_time': self.start_time.isoformat(),
+            'end_time': self.end_time.isoformat(),
+            'location': self.location,
+            'link': self.link
+        }

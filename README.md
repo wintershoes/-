@@ -186,7 +186,7 @@
 #### 状态码
 - **200 OK**: 请求成功。
 - **201 Created**: 资源创建成功。
-- **400 Bad Request**: 服务器无法理解请求格式。
+- **400 Bad Request**: 无效请求。
 - **404 Not Found**: 请求的资源未找到。
 - **500 Internal Server Error**: 服务器内部错误。
 
